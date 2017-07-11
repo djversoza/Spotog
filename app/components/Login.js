@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import Uploader from './Uploader';
+import Maps from './Maps'
 
 export default class Login extends Component {
 
@@ -25,21 +26,21 @@ export default class Login extends Component {
    this.setState({modalVisible: visible});
  };
 
-//   componentWillMount() {
-//    let checked = AsyncStorage.getItem('creds', (err, res) =>{
-//      if (res != null) {
-//        let username = JSON.parse(res).username;
-//        let id = JSON.parse(res).id;
-//        this.props.navigator.push({
-//          title: 'Map',
-//          component: Maps,
-//          navigationBarHidden: true,
-//          passProps: {'username': username,
-//                      'id': id}
-//        });
-//      }
-//    });
-// }
+  componentWillMount() {
+   let checked = AsyncStorage.getItem('creds', (err, res) =>{
+     if (res != null) {
+       let username = JSON.parse(res).username;
+       let id = JSON.parse(res).id;
+       this.props.navigator.push({
+         title: 'Map',
+         component: Maps,
+         navigationBarHidden: true,
+         passProps: {'username': username,
+                     'id': id}
+       });
+     }
+   });
+}
 
   goToMaps(){
     fetch('http://127.0.0.1:3000/users/LoginUser', {
@@ -78,8 +79,8 @@ export default class Login extends Component {
 
   mapper(){
     this.props.navigator.push({
-      title: 'Uploader',
-      component: Uploader,
+      title: 'Maps',
+      component: Maps,
       navigationBarHidden: true,
     });
   };
