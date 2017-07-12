@@ -8,6 +8,8 @@ import {
   AsyncStorage,
   TouchableOpacity,
   TouchableHighlight,
+  Image,
+  CameraRoll,
   Modal
 } from 'react-native';
 
@@ -39,7 +41,8 @@ export default class Maps extends Component {
         longitude: 0
       },
       markers: [{latitude: 37.9, longitude: -122}, {latitude: 38, longitude: -121}],
-      modalVisible: false
+      modalVisible: false,
+      images: []
     }
   };
 
@@ -75,7 +78,7 @@ export default class Maps extends Component {
       this.setState({initialPosition: lastRegion});
       this.setState({markerPosition: lastRegion});
     });
-    
+
     fetch('http://127.0.0.1:3000/users/GetMarkers', {
       method: 'POST',
         headers: {
@@ -147,6 +150,27 @@ export default class Maps extends Component {
     });
   };
 
+  showMe(){
+    this.setModalVisible(true)
+    CameraRoll.getPhotos({first: 5}).done((data) =>{
+      console.log(data.edges)
+     data.edges.map(x => {
+       return this.state.images.push(x.node.image)
+     });
+      this.setState({
+        images: data.edges
+     })
+    // console.log(this.state.images)
+    },
+    (error) => {
+      console.warn(error);
+    })
+  };
+
+  selectImage(uri) {
+       console.log(uri)
+   };
+
   render() {
 
     return (
@@ -158,10 +182,20 @@ export default class Maps extends Component {
           visible={this.state.modalVisible}
           onRequestClose={() => {alert("Modal has been closed.")}}
           >
-        <View style={{backgroundColor: 'rgba(0, 0, 0, 0.5)', height: 567}}>
+        <View style={{backgroundColor: 'rgba(0, 0, 0, 0.5)', height: 567, alignItems: 'center', justifyContent: 'center'}}>
           <View style={{marginTop: 22}}>
-            <View style={{backgroundColor: 'red', height: 500, width: 250}}>
-              <Text>Hello World!</Text>
+            <View style={styles.menuBox}>
+              <View style={styles.imageGrid}>
+                          { this.state.images.map((image) => {
+                              console.log(image.node.image)
+                              return (
+                                  <TouchableHighlight onPress={this.selectImage.bind(null, image.node.image.uri)}>
+                                  <Image style={styles.image} source={{ uri: image.node.image.uri }} />
+                                  </TouchableHighlight>
+                              );
+                              })
+                          }
+                </View>
 
               <TouchableHighlight onPress={() => {
                 this.setModalVisible(!this.state.modalVisible)
@@ -184,13 +218,9 @@ export default class Maps extends Component {
             </MapView.Marker>
 
             {this.state.markers.map((marker, key)=>{
-              return  <MapView.Marker key ={key} onPress={() => {
-                this.setModalVisible(true)
-              }} coordinate={marker}/>
+              return  <MapView.Marker key={key} onPress={this.showMe.bind(this)} coordinate={marker}/>
             })}
         </MapView>
-
-
 
           <View style={styles.footer}>
             <TouchableHighlight style={styles.bringUp} onPress={this.upper.bind(this)}>
@@ -307,6 +337,30 @@ const styles = StyleSheet.create({
     },
     buttonText: {
       color: 'white'
+    },
+    menuBox: {
+      borderColor: 'white',
+      borderWidth: 3,
+      backgroundColor: 'red',
+      height: 500,
+      width: 300,
+      padding: 20,
+      borderRadius: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
+    },
+    imageGrid: {
+        flex: 1,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center'
+    },
+    image: {
+        width: 100,
+        height: 100,
+        margin: 10,
     }
 });
 
