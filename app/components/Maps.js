@@ -94,7 +94,6 @@ export default class Maps extends Component {
       this.setState({markers: resp});
     })
     .done();
-
   };
 
   setModalVisible(visible) {
@@ -186,11 +185,11 @@ export default class Maps extends Component {
           <View style={{marginTop: 22}}>
             <View style={styles.menuBox}>
               <View style={styles.imageGrid}>
-                          { this.state.images.map((image) => {
+                          { this.state.images.map((image, key) => {
                               console.log(image.node.image)
                               return (
-                                  <TouchableHighlight onPress={this.selectImage.bind(null, image.node.image.uri)}>
-                                  <Image style={styles.image} source={{ uri: image.node.image.uri }} />
+                                  <TouchableHighlight key={key} onPress={this.selectImage.bind(null, image.node.image.uri)}>
+                                  <Image key={key} style={styles.image} source={{ uri: image.node.image.uri }} />
                                   </TouchableHighlight>
                               );
                               })

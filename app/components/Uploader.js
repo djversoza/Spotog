@@ -7,13 +7,22 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  Platform,
   NavigatorIOS,
   TouchableHighlight,
   View
 } from 'react-native';
 
+
+import Firebase from './fbdata';
+import RNFetchBlob from 'react-native-fetch-blob';
+
+
 export default class Uploader extends Component {
 
+  componentWillMount(){
+
+  }
   constructor() {
     super();
     this.state = { images: [], selected: '' };
@@ -47,19 +56,52 @@ export default class Uploader extends Component {
     console.log(err)
   }
 
-  selectImage(uri) {
-       console.log(uri)
+  selectImage(urie) {
+
+    const image = urie
+
+      const Blob = RNFetchBlob.polyfill.Blob
+      const fs = RNFetchBlob.fs
+      window.XMLHttpRequest = RNFetchBlob.polyfill.XMLHttpRequest
+      window.Blob = Blob
+
+
+      let uploadBlob = null
+      const imageRef = Firebase.storage().ref('images').child("pasta.jpg")
+      let mime = 'image/jpg'
+      fs.readFile(image, 'base64')
+        .then((data) => {
+          return Blob.build(data, { type: `${mime};BASE64` })
+      })
+      .then((blob) => {
+          uploadBlob = blob
+          return imageRef.put(blob, { contentType: mime })
+        })
+        .then(() => {
+          uploadBlob.close()
+          return imageRef.getDownloadURL()
+        })
+        .then((url) => {
+          // URL of the image uploaded on Firebase storage
+          console.log(url);
+
+        })
+        .catch((error) => {
+          console.log(error);
+
+        })
+
    }
 
 
   render() {
     return (
       <View style={styles.imageGrid}>
-                  { this.state.images.map((image) => {
+                  { this.state.images.map((image, key) => {
                       console.log(image.node.image)
                       return (
-                          <TouchableHighlight onPress={this.selectImage.bind(null, image.node.image.uri)}>
-                          <Image style={styles.image} source={{ uri: image.node.image.uri }} />
+                          <TouchableHighlight key={key} onPress={this.selectImage.bind(null, image.node.image.uri)}>
+                          <Image key={key} style={styles.image} source={{ uri: image.node.image.uri }} />
                           </TouchableHighlight>
                       );
                       })
