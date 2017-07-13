@@ -8,6 +8,7 @@ import {
   AsyncStorage,
   TouchableOpacity,
   TouchableHighlight,
+  ScrollView,
   Image,
   CameraRoll,
   Modal
@@ -16,6 +17,8 @@ import {
 import MapView from 'react-native-maps';
 import Login from './Login';
 import Uploader from './Uploader';
+import Firebase from './fbdata';
+import RNFetchBlob from 'react-native-fetch-blob';
 
 const {width, height} = Dimensions.get('window');
 const SCREEN_WIDTH = width;
@@ -42,7 +45,8 @@ export default class Maps extends Component {
       },
       markers: [{latitude: 37.9, longitude: -122}, {latitude: 38, longitude: -121}],
       modalVisible: false,
-      images: []
+      images: [],
+      show: false
     }
   };
 
@@ -149,25 +153,65 @@ export default class Maps extends Component {
     });
   };
 
-  showMe(){
+  showMe(marker){
     this.setModalVisible(true)
-    CameraRoll.getPhotos({first: 5}).done((data) =>{
-      console.log(data.edges)
+  };
+
+  selectImage(uri) {
+    this.setState({show: true});
+    CameraRoll.getPhotos({first: 6}).done((data) =>{
      data.edges.map(x => {
        return this.state.images.push(x.node.image)
      });
       this.setState({
         images: data.edges
      })
-    // console.log(this.state.images)
     },
     (error) => {
       console.warn(error);
     })
-  };
+   };
 
-  selectImage(uri) {
-       console.log(uri)
+   uploadPhoto(uri){
+     const image = uri;
+     let time = new Date();
+     let theTime = time.toString())
+
+     const Blob = RNFetchBlob.polyfill.Blob
+     const fs = RNFetchBlob.fs
+     window.XMLHttpRequest = RNFetchBlob.polyfill.XMLHttpRequest
+     window.Blob = Blob
+
+
+     let uploadBlob = null
+     const imageRef = Firebase.storage().ref('images').child("hi.jpg")
+     let mime = 'image/jpg'
+
+     fs.readFile(image, 'base64')
+       .then((data) => {
+         return Blob.build(data, { type: `${mime};BASE64` })
+       })
+       .then((blob) => {
+           uploadBlob = blob
+           return imageRef.put(blob, { contentType: mime })
+       })
+         .then(() => {
+           uploadBlob.close()
+           return imageRef.getDownloadURL()
+         })
+         .then((url) => {
+           // URL of the image uploaded on Firebase storage
+           console.log(url);
+
+         })
+         .catch((error) => {
+           console.log(error);
+
+         })
+   }
+
+   closePicker(){
+     this.setState({images:[], show: false});
    };
 
   render() {
@@ -182,25 +226,30 @@ export default class Maps extends Component {
           onRequestClose={() => {alert("Modal has been closed.")}}
           >
         <View style={{backgroundColor: 'rgba(0, 0, 0, 0.5)', height: 567, alignItems: 'center', justifyContent: 'center'}}>
+
           <View style={{marginTop: 22}}>
+
             <View style={styles.menuBox}>
-              <View style={styles.imageGrid}>
+            <Text onPress={this.selectImage.bind(this)}> Choose Photos </Text>
+            {this.state.show ? <TouchableOpacity style={styles.closeBox}><Text onPress={this.closePicker.bind(this)} style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
+              {this.state.show ? <View style={styles.imageGrid}>
                           { this.state.images.map((image, key) => {
-                              console.log(image.node.image)
                               return (
-                                  <TouchableHighlight key={key} onPress={this.selectImage.bind(null, image.node.image.uri)}>
+                                  <TouchableHighlight onPress={this.uploadPhoto.bind(this, image.node.image.uri)} key={key}>
                                   <Image key={key} style={styles.image} source={{ uri: image.node.image.uri }} />
                                   </TouchableHighlight>
                               );
                               })
                           }
-                </View>
+                          </View> : null}
 
               <TouchableHighlight onPress={() => {
                 this.setModalVisible(!this.state.modalVisible)
+                this.setState({images:[], show: false})
               }}>
-                <Text>Hide Modal</Text>
+                <View style={styles.hider}><Text>Hide Modal</Text></View>
               </TouchableHighlight>
+
             </View>
           </View>
         </View>
@@ -217,7 +266,7 @@ export default class Maps extends Component {
             </MapView.Marker>
 
             {this.state.markers.map((marker, key)=>{
-              return  <MapView.Marker key={key} onPress={this.showMe.bind(this)} coordinate={marker}/>
+              return  <MapView.Marker key={key} onPress={this.showMe.bind(this, marker)} coordinate={marker}/>
             })}
         </MapView>
 
@@ -360,6 +409,25 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         margin: 10,
+    },
+    closePhotos: {
+      color: 'white',
+      fontSize: 18
+    },
+    closeBox: {
+      position: 'absolute',
+      borderRadius: 50,
+      left: 250,
+      top: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 27,
+      height: 27,
+      padding: 5,
+      backgroundColor: 'blue'
+    },
+    hider: {
+      left: 5
     }
 });
 
