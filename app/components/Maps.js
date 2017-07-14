@@ -49,6 +49,7 @@ export default class Maps extends Component {
       images: [],
       dlPhotos: [],
       show: false,
+      showPhotos: false,
       markerID: null,
       loading: false
     }
@@ -243,7 +244,32 @@ export default class Maps extends Component {
 
          })
          this.setState({loading: false})
-   }
+   };
+
+   viewImages(){
+
+     fetch('http://127.0.0.1:3000/users/GetPhotos', {
+       method: 'POST',
+         headers: {
+           'Accept' : 'application/json',
+           'Content-Type': 'application/json'
+         },
+           body: JSON.stringify({
+             id: this.state.markerID
+           })
+     })
+     .then((res) => res.json())
+     .then((resp) => {
+       let arr = resp.map(x =>{
+         return x.url.replace(/[\\$]/, '?')
+       })
+       this.setState({dlPhotos: arr});
+     })
+     .done();
+
+     this.setState({showPhotos: true});
+
+   };
 
    closePicker(){
      this.setState({images:[], show: false});
@@ -278,6 +304,20 @@ export default class Maps extends Component {
                           }
                           </View> : null}
 
+              <Text onPress={this.viewImages.bind(this)}> View Photos</Text>
+              {this.state.showPhotos ? <View style={styles.imageGrid}>
+                          { this.state.dlPhotos.map((image, key) => {
+                            console.log(image)
+                              return (
+                                  <TouchableHighlight  key={key}>
+                                  <Image key={key} style={styles.image} source={{ uri: image}} />
+                                  </TouchableHighlight>
+                              );
+                              })
+                          }
+                          </View> : null}
+
+
               <TouchableHighlight onPress={() => {
                 this.setModalVisible(!this.state.modalVisible)
                 this.setState({images:[], show: false})
@@ -303,7 +343,7 @@ export default class Maps extends Component {
             {this.state.markers.map((marker, key)=>{
               return  <MapView.Marker key={key} onPress={this.showMe.bind(this, marker)} coordinate={marker}/>
             })}
-            
+
         </MapView>
 
           <View style={styles.footer}>
