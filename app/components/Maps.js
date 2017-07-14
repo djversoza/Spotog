@@ -11,6 +11,7 @@ import {
   ScrollView,
   Image,
   CameraRoll,
+  AlertIOS,
   Modal
 } from 'react-native';
 
@@ -43,17 +44,20 @@ export default class Maps extends Component {
         latitude: 0,
         longitude: 0
       },
-      markers: [{latitude: 37.9, longitude: -122}, {latitude: 38, longitude: -121}],
+      markers: [],
       modalVisible: false,
       images: [],
-      show: false
+      dlPhotos: [],
+      show: false,
+      markerID: null,
+      loading: false
     }
   };
 
   watchID: ?number = null;
 
   componentDidMount() {
-
+    console.log(this.state.markerID)
     navigator.geolocation.getCurrentPosition((position) =>{
       var lat = parseFloat(position.coords.latitude);
       var long = parseFloat(position.coords.longitude);
@@ -123,13 +127,22 @@ export default class Maps extends Component {
       })
       .done();
 
-      let newArr = this.state.markers.push({latitude: lat, longitude: long});
-      this.setState({marker: newArr});
+      fetch('http://127.0.0.1:3000/users/GetMarkers', {
+        method: 'POST',
+          headers: {
+            'Accept' : 'application/json',
+            'Content-Type': 'application/json'
+          },
+            body: JSON.stringify({
+              id: this.props.id
+            })
+      })
+      .then((res) => res.json())
+      .then((resp) => {
+        this.setState({markers: resp});
+      })
+      .done();
     })
-  };
-
-  checkLocation(x){ //Make this into a context menu to add photos to this spot.
-     alert(x.longitude + " " + x.latitude)
   };
 
   logout(){
@@ -154,10 +167,12 @@ export default class Maps extends Component {
   };
 
   showMe(marker){
+    this.setState({markerID: marker.id});
     this.setModalVisible(true)
   };
 
-  selectImage(uri) {
+  selectImage() {
+    console.log(this.state.markerID);
     this.setState({show: true});
     CameraRoll.getPhotos({first: 6}).done((data) =>{
      data.edges.map(x => {
@@ -175,7 +190,7 @@ export default class Maps extends Component {
    uploadPhoto(uri){
      const image = uri;
      let time = new Date();
-     let theTime = time.toString())
+     let theTime = time.toString();
 
      const Blob = RNFetchBlob.polyfill.Blob
      const fs = RNFetchBlob.fs
@@ -183,12 +198,14 @@ export default class Maps extends Component {
      window.Blob = Blob
 
 
+
      let uploadBlob = null
-     const imageRef = Firebase.storage().ref('images').child("hi.jpg")
+     const imageRef = Firebase.storage().ref('images').child(theTime.split(" ").join("") + this.props.id + ".jpg")
      let mime = 'image/jpg'
 
      fs.readFile(image, 'base64')
        .then((data) => {
+         this.setState({loading: true});
          return Blob.build(data, { type: `${mime};BASE64` })
        })
        .then((blob) => {
@@ -200,14 +217,32 @@ export default class Maps extends Component {
            return imageRef.getDownloadURL()
          })
          .then((url) => {
-           // URL of the image uploaded on Firebase storage
-           console.log(url);
 
+           fetch('http://127.0.0.1:3000/users/UploadPhotos', {
+             method: 'POST',
+               headers: {
+                 'Accept' : 'application/json',
+                 'Content-Type': 'application/json'
+               },
+                 body: JSON.stringify({
+                   url: url,
+                   marker: this.state.markerID,
+                 })
+           })
+           .done();
+
+           alert('Upload Successful')
+           console.log(url);
+           console.log(this.state.loading)
+         })
+         .then(() =>{
+           this.setState({loading: false})
          })
          .catch((error) => {
            console.log(error);
 
          })
+         this.setState({loading: false})
    }
 
    closePicker(){
@@ -268,6 +303,7 @@ export default class Maps extends Component {
             {this.state.markers.map((marker, key)=>{
               return  <MapView.Marker key={key} onPress={this.showMe.bind(this, marker)} coordinate={marker}/>
             })}
+            
         </MapView>
 
           <View style={styles.footer}>
