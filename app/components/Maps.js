@@ -126,23 +126,11 @@ export default class Maps extends Component {
               id: this.props.id
             })
       })
-      .done();
-
-      fetch('http://127.0.0.1:3000/users/GetMarkers', {
-        method: 'POST',
-          headers: {
-            'Accept' : 'application/json',
-            'Content-Type': 'application/json'
-          },
-            body: JSON.stringify({
-              id: this.props.id
-            })
-      })
       .then((res) => res.json())
-      .then((resp) => {
+      .then((resp) =>{
         this.setState({markers: resp});
       })
-      .done();
+      .done()
     })
   };
 
@@ -159,22 +147,13 @@ export default class Maps extends Component {
     navigator.geolocation.clearWatch(this.watchID);
   };
 
-  upper(){
-    this.props.navigator.push({
-      title: 'Uploader',
-      component: Uploader,
-      navigationBarHidden: true,
-    });
-  };
-
   showMe(marker){
     this.setState({markerID: marker.id});
     this.setModalVisible(true)
   };
 
   selectImage() {
-    console.log(this.state.markerID);
-    this.setState({show: true});
+    this.setState({show: true, showPhotos: false});
     CameraRoll.getPhotos({first: 6}).done((data) =>{
      data.edges.map(x => {
        return this.state.images.push(x.node.image)
@@ -267,13 +246,17 @@ export default class Maps extends Component {
      })
      .done();
 
-     this.setState({showPhotos: true});
+     this.setState({showPhotos: true, show: false});
 
    };
 
    closePicker(){
      this.setState({images:[], show: false});
    };
+
+   closeViewer(){
+     this.setState({dlPhotos: [], showPhotos: false});
+   }
 
   render() {
 
@@ -291,7 +274,7 @@ export default class Maps extends Component {
           <View style={{marginTop: 22}}>
 
             <View style={styles.menuBox}>
-            <Text onPress={this.selectImage.bind(this)}> Choose Photos </Text>
+            <View style={styles.uploader}><Text onPress={this.selectImage.bind(this)}> Choose Photos </Text></View>
             {this.state.show ? <TouchableOpacity style={styles.closeBox}><Text onPress={this.closePicker.bind(this)} style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
               {this.state.show ? <View style={styles.imageGrid}>
                           { this.state.images.map((image, key) => {
@@ -304,7 +287,8 @@ export default class Maps extends Component {
                           }
                           </View> : null}
 
-              <Text onPress={this.viewImages.bind(this)}> View Photos</Text>
+            <View style={styles.viewPhotos}><Text onPress={this.viewImages.bind(this)}> View Photos</Text></View>
+            {this.state.showPhotos ? <TouchableOpacity style={styles.closeBox}><Text onPress={this.closeViewer.bind(this)} style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
               {this.state.showPhotos ? <View style={styles.imageGrid}>
                           { this.state.dlPhotos.map((image, key) => {
                             console.log(image)
@@ -321,6 +305,7 @@ export default class Maps extends Component {
               <TouchableHighlight onPress={() => {
                 this.setModalVisible(!this.state.modalVisible)
                 this.setState({images:[], show: false})
+                this.setState({dlPhotos:[], showPhotos: false})
               }}>
                 <View style={styles.hider}><Text>Hide Modal</Text></View>
               </TouchableHighlight>
@@ -343,13 +328,9 @@ export default class Maps extends Component {
             {this.state.markers.map((marker, key)=>{
               return  <MapView.Marker key={key} onPress={this.showMe.bind(this, marker)} coordinate={marker}/>
             })}
-
         </MapView>
 
           <View style={styles.footer}>
-            <TouchableHighlight style={styles.bringUp} onPress={this.upper.bind(this)}>
-              <Text>Show Modal</Text>
-            </TouchableHighlight>
 
             <TouchableOpacity onPress={this.addMarker.bind(this, this.state.markerPosition)} style={styles.addButton}>
                 <Text style={styles.buttonText}>Add Marker</Text>
@@ -434,6 +415,7 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
       elevation: 8,
       marginBottom: 0,
+      left: 35
     },
     logoutButton: {
       backgroundColor: '#E91E63',
@@ -446,18 +428,7 @@ const styles = StyleSheet.create({
       elevation: 8,
       left: 20,
       marginBottom: 0,
-    },
-    bringUp: {
-      backgroundColor: '#E91E63',
-      width: 90,
-      height: 45,
-      borderRadius: 210,
-      borderColor: '#ccc',
-      alignItems: 'center',
-      justifyContent: 'center',
-      elevation: 8,
-      right: 20,
-      marginBottom: 0,
+      left: 60
     },
     buttonText: {
       color: 'white'
@@ -468,6 +439,8 @@ const styles = StyleSheet.create({
       backgroundColor: 'red',
       height: 500,
       width: 300,
+      alignItems: 'center',
+      justifyContent: 'center',
       padding: 20,
       borderRadius: 10,
       shadowColor: '#000',
@@ -503,7 +476,16 @@ const styles = StyleSheet.create({
       backgroundColor: 'blue'
     },
     hider: {
-      left: 5
+      backgroundColor: 'white',
+      padding: 5
+    },
+    viewPhotos: {
+      backgroundColor: 'white',
+      padding: 5
+    },
+    uploader: {
+      backgroundColor: 'white',
+      padding: 5
     }
 });
 
