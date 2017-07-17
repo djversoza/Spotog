@@ -51,7 +51,8 @@ export default class Maps extends Component {
       show: false,
       showPhotos: false,
       markerID: null,
-      loading: false
+      loading: false,
+      place: ""
     }
   };
 
@@ -113,24 +114,29 @@ export default class Maps extends Component {
     navigator.geolocation.getCurrentPosition((position) =>{
       var lat = parseFloat(position.coords.latitude);
       var long = parseFloat(position.coords.longitude);
+      AlertIOS.prompt(
+        'Name this spot',
+        null,
+        text => fetch('http://127.0.0.1:3000/users/NewMarker', {
+          method: 'POST',
+            headers: {
+              'Accept' : 'application/json',
+              'Content-Type': 'application/json'
+            },
+              body: JSON.stringify({
+                latitude: lat,
+                longitude: long,
+                id: this.props.id,
+                place: text
+              })
+        })
+        .then((res) => res.json())
+        .then((resp) =>{
+          this.setState({markers: resp});
+        })
+        .done()
+      );
 
-      fetch('http://127.0.0.1:3000/users/NewMarker', {
-        method: 'POST',
-          headers: {
-            'Accept' : 'application/json',
-            'Content-Type': 'application/json'
-          },
-            body: JSON.stringify({
-              latitude: lat,
-              longitude: long,
-              id: this.props.id
-            })
-      })
-      .then((res) => res.json())
-      .then((resp) =>{
-        this.setState({markers: resp});
-      })
-      .done()
     })
   };
 
@@ -148,13 +154,14 @@ export default class Maps extends Component {
   };
 
   showMe(marker){
-    this.setState({markerID: marker.id});
+    console.log(marker.name)
+    this.setState({markerID: marker.id, place: marker.name});
     this.setModalVisible(true)
   };
 
   selectImage() {
     this.setState({show: true, showPhotos: false});
-    CameraRoll.getPhotos({first: 6}).done((data) =>{
+    CameraRoll.getPhotos({first: 10}).done((data) =>{
      data.edges.map(x => {
        return this.state.images.push(x.node.image)
      });
@@ -176,8 +183,6 @@ export default class Maps extends Component {
      const fs = RNFetchBlob.fs
      window.XMLHttpRequest = RNFetchBlob.polyfill.XMLHttpRequest
      window.Blob = Blob
-
-
 
      let uploadBlob = null
      const imageRef = Firebase.storage().ref('images').child(theTime.split(" ").join("") + this.props.id + ".jpg")
@@ -226,7 +231,6 @@ export default class Maps extends Component {
    };
 
    viewImages(){
-
      fetch('http://127.0.0.1:3000/users/GetPhotos', {
        method: 'POST',
          headers: {
@@ -245,9 +249,7 @@ export default class Maps extends Component {
        this.setState({dlPhotos: arr});
      })
      .done();
-
      this.setState({showPhotos: true, show: false});
-
    };
 
    closePicker(){
@@ -270,28 +272,32 @@ export default class Maps extends Component {
           onRequestClose={() => {alert("Modal has been closed.")}}
           >
         <View style={{backgroundColor: 'rgba(0, 0, 0, 0.5)', height: 567, alignItems: 'center', justifyContent: 'center'}}>
-
           <View style={{marginTop: 22}}>
 
+          <View style={{backgroundColor: 'white', alignItems: 'center', marginBottom: 3, borderRadius: 4}}><Text>You are looking at {this.state.place}</Text></View>
             <View style={styles.menuBox}>
-            <View style={styles.uploader}><Text onPress={this.selectImage.bind(this)}> Choose Photos </Text></View>
-            {this.state.show ? <TouchableOpacity style={styles.closeBox}><Text onPress={this.closePicker.bind(this)} style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
-              {this.state.show ? <View style={styles.imageGrid}>
+            <TouchableOpacity style={styles.uploader} onPress={this.selectImage.bind(this)}><Text> Upload Photos </Text></TouchableOpacity>
+            {this.state.show ? <TouchableOpacity style={styles.closeBox} onPress={this.closePicker.bind(this)}><Text style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
+              {this.state.show ? <ScrollView style={{backgroundColor: 'white', marginTop: 15}}>
+                        <View style={styles.imageGrid}>
                           { this.state.images.map((image, key) => {
                               return (
+
                                   <TouchableHighlight onPress={this.uploadPhoto.bind(this, image.node.image.uri)} key={key}>
                                   <Image key={key} style={styles.image} source={{ uri: image.node.image.uri }} />
                                   </TouchableHighlight>
+
                               );
                               })
                           }
-                          </View> : null}
+                          </View>
+                          </ScrollView> : null}
 
-            <View style={styles.viewPhotos}><Text onPress={this.viewImages.bind(this)}> View Photos</Text></View>
-            {this.state.showPhotos ? <TouchableOpacity style={styles.closeBox}><Text onPress={this.closeViewer.bind(this)} style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
-              {this.state.showPhotos ? <View style={styles.imageGrid}>
+            <TouchableOpacity style={styles.viewPhotos} onPress={this.viewImages.bind(this)}><Text>View Photos</Text></TouchableOpacity>
+            {this.state.showPhotos ? <TouchableOpacity style={styles.closeBox2} onPress={this.closeViewer.bind(this)}><Text style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
+              {this.state.showPhotos ? <ScrollView style={{backgroundColor: 'white', marginBottom: 15}}>
+                        <View style={styles.imageGrid}>
                           { this.state.dlPhotos.map((image, key) => {
-                            console.log(image)
                               return (
                                   <TouchableHighlight  key={key}>
                                   <Image key={key} style={styles.image} source={{ uri: image}} />
@@ -299,16 +305,17 @@ export default class Maps extends Component {
                               );
                               })
                           }
-                          </View> : null}
+                          </View>
+                          </ScrollView> : null}
 
 
-              <TouchableHighlight onPress={() => {
+              <TouchableOpacity onPress={() => {
                 this.setModalVisible(!this.state.modalVisible)
                 this.setState({images:[], show: false})
-                this.setState({dlPhotos:[], showPhotos: false})
+                this.setState({dlPhotos:[], showPhotos: false, place: ""})
               }}>
-                <View style={styles.hider}><Text>Hide Modal</Text></View>
-              </TouchableHighlight>
+                <View style={styles.hider}><Text>Close Menu</Text></View>
+              </TouchableOpacity>
 
             </View>
           </View>
@@ -415,6 +422,9 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
       elevation: 8,
       marginBottom: 0,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
       left: 35
     },
     logoutButton: {
@@ -428,6 +438,9 @@ const styles = StyleSheet.create({
       elevation: 8,
       left: 20,
       marginBottom: 0,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
       left: 60
     },
     buttonText: {
@@ -436,7 +449,7 @@ const styles = StyleSheet.create({
     menuBox: {
       borderColor: 'white',
       borderWidth: 3,
-      backgroundColor: 'red',
+      backgroundColor: '#E91E63',
       height: 500,
       width: 300,
       alignItems: 'center',
@@ -452,7 +465,7 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
     image: {
         width: 100,
@@ -461,30 +474,65 @@ const styles = StyleSheet.create({
     },
     closePhotos: {
       color: 'white',
-      fontSize: 18
+      fontSize: 12
     },
     closeBox: {
       position: 'absolute',
-      borderRadius: 50,
-      left: 250,
-      top: 13,
+      borderRadius: 8,
+      left: 256,
+      top: 21.5,
       alignItems: 'center',
       justifyContent: 'center',
-      width: 27,
-      height: 27,
-      padding: 5,
+      width: 24,
+      height: 24,
+      padding: 4,
+      backgroundColor: 'blue'
+    },
+    closeBox2: {
+      position: 'absolute',
+      borderRadius: 8,
+      left: 256,
+      top: 63.5,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 24,
+      height: 24,
+      padding: 4,
       backgroundColor: 'blue'
     },
     hider: {
       backgroundColor: 'white',
+      width: 270,
+      alignItems: 'center',
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
       padding: 5
     },
     viewPhotos: {
       backgroundColor: 'white',
+      width: 270,
+      alignItems: 'center',
+      marginTop: 15,
+      marginBottom: 15,
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
       padding: 5
     },
     uploader: {
       backgroundColor: 'white',
+      alignItems: 'center',
+      width: 270,
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
       padding: 5
     }
 });

@@ -77,14 +77,6 @@ export default class Login extends Component {
     .done();
   };
 
-  mapper(){
-    this.props.navigator.push({
-      title: 'Maps',
-      component: Maps,
-      navigationBarHidden: true,
-    });
-  };
-
   regAcc(){
     if (this.state.username.length < 5 || this.state.password.length < 8) {
         alert('Username must be at least 5 characters \n Password must be at least 8 characters');
@@ -118,10 +110,10 @@ export default class Login extends Component {
     return (
       <View style = {styles.container}>
 
-        <Image source={require('./img/rain.jpg')} style={styles.backgroundImage}>
+        <Image source={require('./img/maps.jpg')} style={styles.backgroundImage}>
 
           <View style={styles.content}>
-            <Text style={styles.logo}> Spotographer</Text>
+          <View style={styles.logoBG}><Image style={styles.logo} source={require('./img/spotlogo.png')}/></View>
 
             <View style={styles.inputContainer}>
 
@@ -142,12 +134,8 @@ export default class Login extends Component {
                 <Text style={styles.buttonText}>Login</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={this.mapper.bind(this)} style={styles.buttonContainer}>
-                <Text style={styles.buttonText}>go</Text>
-              </TouchableOpacity>
-
               <TouchableOpacity onPress={this.regAcc.bind(this)} style={styles.buttonContainer}>
-                <Text style={styles.buttonText}>create</Text>
+                <Text style={styles.buttonText}>Create Account</Text>
               </TouchableOpacity>
 
             </View>
@@ -174,14 +162,14 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   logo: {
-    backgroundColor:'transparent',
-    color: 'white',
-    fontSize: 40,
-    fontWeight: 'bold',
-    textShadowColor: '#252525',
-    textShadowOffset: {width: 2, height: 2},
-    textShadowRadius: 5,
-    marginBottom: 20
+    width: 240,
+    height: 240,
+  },
+  logoBG: {
+    borderWidth: 2,
+    borderColor: 'white',
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.3)'
   },
   inputContainer: {
     margin: 20,
