@@ -5,18 +5,21 @@ import {
   Text,
   View,
   Dimensions,
+  TextInput,
   AsyncStorage,
   TouchableOpacity,
   TouchableHighlight,
   ScrollView,
   Image,
   CameraRoll,
+  AlertIOS,
   Modal
 } from 'react-native';
 
 import MapView from 'react-native-maps';
 import Login from './Login';
 import Uploader from './Uploader';
+import Settings from './Settings'
 import Firebase from './fbdata';
 import RNFetchBlob from 'react-native-fetch-blob';
 
@@ -43,17 +46,25 @@ export default class Maps extends Component {
         latitude: 0,
         longitude: 0
       },
-      markers: [{latitude: 37.9, longitude: -122}, {latitude: 38, longitude: -121}],
+      markers: [],
       modalVisible: false,
       images: [],
-      show: false
+      dlPhotos: [],
+      show: false,
+      showPhotos: false,
+      showComments: false,
+      markerID: null,
+      loading: false,
+      place: "",
+      comment: "",
+      comments: []
     }
   };
 
   watchID: ?number = null;
 
   componentDidMount() {
-
+    console.log(this.state.markerID)
     navigator.geolocation.getCurrentPosition((position) =>{
       var lat = parseFloat(position.coords.latitude);
       var long = parseFloat(position.coords.longitude);
@@ -108,28 +119,30 @@ export default class Maps extends Component {
     navigator.geolocation.getCurrentPosition((position) =>{
       var lat = parseFloat(position.coords.latitude);
       var long = parseFloat(position.coords.longitude);
+      AlertIOS.prompt(
+        'Name this spot',
+        null,
+        text => fetch('http://127.0.0.1:3000/users/NewMarker', {
+          method: 'POST',
+            headers: {
+              'Accept' : 'application/json',
+              'Content-Type': 'application/json'
+            },
+              body: JSON.stringify({
+                latitude: lat,
+                longitude: long,
+                id: this.props.id,
+                place: text
+              })
+        })
+        .then((res) => res.json())
+        .then((resp) =>{
+          this.setState({markers: resp});
+        })
+        .done()
+      );
 
-      fetch('http://127.0.0.1:3000/users/NewMarker', {
-        method: 'POST',
-          headers: {
-            'Accept' : 'application/json',
-            'Content-Type': 'application/json'
-          },
-            body: JSON.stringify({
-              latitude: lat,
-              longitude: long,
-              id: this.props.id
-            })
-      })
-      .done();
-
-      let newArr = this.state.markers.push({latitude: lat, longitude: long});
-      this.setState({marker: newArr});
     })
-  };
-
-  checkLocation(x){ //Make this into a context menu to add photos to this spot.
-     alert(x.longitude + " " + x.latitude)
   };
 
   logout(){
@@ -145,21 +158,15 @@ export default class Maps extends Component {
     navigator.geolocation.clearWatch(this.watchID);
   };
 
-  upper(){
-    this.props.navigator.push({
-      title: 'Uploader',
-      component: Uploader,
-      navigationBarHidden: true,
-    });
-  };
-
   showMe(marker){
+    console.log(marker.name)
+    this.setState({markerID: marker.id, place: marker.name});
     this.setModalVisible(true)
   };
 
-  selectImage(uri) {
-    this.setState({show: true});
-    CameraRoll.getPhotos({first: 6}).done((data) =>{
+  selectImage() {
+    this.setState({show: true, showPhotos: false, showComments: false});
+    CameraRoll.getPhotos({first: 10}).done((data) =>{
      data.edges.map(x => {
        return this.state.images.push(x.node.image)
      });
@@ -175,20 +182,20 @@ export default class Maps extends Component {
    uploadPhoto(uri){
      const image = uri;
      let time = new Date();
-     let theTime = time.toString())
+     let theTime = time.toString();
 
      const Blob = RNFetchBlob.polyfill.Blob
      const fs = RNFetchBlob.fs
      window.XMLHttpRequest = RNFetchBlob.polyfill.XMLHttpRequest
      window.Blob = Blob
 
-
      let uploadBlob = null
-     const imageRef = Firebase.storage().ref('images').child("hi.jpg")
+     const imageRef = Firebase.storage().ref('images').child(theTime.split(" ").join("") + this.props.id + ".jpg")
      let mime = 'image/jpg'
 
      fs.readFile(image, 'base64')
        .then((data) => {
+         this.setState({loading: true});
          return Blob.build(data, { type: `${mime};BASE64` })
        })
        .then((blob) => {
@@ -200,21 +207,122 @@ export default class Maps extends Component {
            return imageRef.getDownloadURL()
          })
          .then((url) => {
-           // URL of the image uploaded on Firebase storage
-           console.log(url);
 
+           fetch('http://127.0.0.1:3000/users/UploadPhotos', {
+             method: 'POST',
+               headers: {
+                 'Accept' : 'application/json',
+                 'Content-Type': 'application/json'
+               },
+                 body: JSON.stringify({
+                   url: url,
+                   marker: this.state.markerID,
+                 })
+           })
+           .done();
+
+           alert('Upload Successful')
+           console.log(url);
+           console.log(this.state.loading)
+         })
+         .then(() =>{
+           this.setState({loading: false})
          })
          .catch((error) => {
            console.log(error);
 
          })
-   }
+         this.setState({loading: false})
+   };
+
+   viewImages(){
+     fetch('http://127.0.0.1:3000/users/GetPhotos', {
+       method: 'POST',
+         headers: {
+           'Accept' : 'application/json',
+           'Content-Type': 'application/json'
+         },
+           body: JSON.stringify({
+             id: this.state.markerID
+           })
+     })
+     .then((res) => res.json())
+     .then((resp) => {
+       let arr = resp.map(x =>{
+         return x.url.replace(/[\\$]/, '?')
+       })
+       this.setState({dlPhotos: arr});
+     })
+     .done();
+     this.setState({showPhotos: true, show: false, showComments: false});
+   };
 
    closePicker(){
      this.setState({images:[], show: false});
    };
 
+   closeViewer(){
+     this.setState({dlPhotos: [], showPhotos: false, });
+   };
+
+   settings(){
+     this.props.navigator.push({
+       title: 'Settings',
+       component: Settings,
+     });
+   };
+
+   viewComments(){
+     this.setState({showComments: true, showPhotos: false, show: false});
+     fetch('http://127.0.0.1:3000/users/GetComments', {
+       method: 'POST',
+         headers: {
+           'Accept' : 'application/json',
+           'Content-Type': 'application/json'
+         },
+           body: JSON.stringify({
+             marker: this.state.markerID ,
+           })
+     })
+     .then((res) => res.json())
+     .then((resp) =>{
+       this.setState({comments: resp});
+     })
+     .done()
+   };
+
+   addComment(){
+     if(this.state.comment.length > 0) {
+       fetch('http://127.0.0.1:3000/users/AddComment', {
+         method: 'POST',
+           headers: {
+             'Accept' : 'application/json',
+             'Content-Type': 'application/json'
+           },
+             body: JSON.stringify({
+               marker: this.state.markerID ,
+               comment: this.state.comment,
+               poster: this.props.id,
+             })
+       })
+       .then((res) => res.json())
+       .then((resp) =>{
+         this.setState({comments: resp, comment: ""});
+       })
+       .done()
+     }  else {
+       alert('Must not be blank');
+     }
+   };
+
+   closeComments(){
+     this.setState({showComments: false, comments: []});
+   };
+
   render() {
+    let commentsArr = this.state.comments.map((comment, index) =>{
+      return comment.comment;
+    })
 
     return (
       <View style={styles.container}>
@@ -226,44 +334,83 @@ export default class Maps extends Component {
           onRequestClose={() => {alert("Modal has been closed.")}}
           >
         <View style={{backgroundColor: 'rgba(0, 0, 0, 0.5)', height: 567, alignItems: 'center', justifyContent: 'center'}}>
-
           <View style={{marginTop: 22}}>
 
+          <View style={{backgroundColor: 'white', alignItems: 'center', marginBottom: 3, borderRadius: 4}}><Text>You are looking at {this.state.place}</Text></View>
             <View style={styles.menuBox}>
-            <Text onPress={this.selectImage.bind(this)}> Choose Photos </Text>
-            {this.state.show ? <TouchableOpacity style={styles.closeBox}><Text onPress={this.closePicker.bind(this)} style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
-              {this.state.show ? <View style={styles.imageGrid}>
+            <TouchableOpacity style={styles.uploader} onPress={this.selectImage.bind(this)}><Text> Upload Photos </Text></TouchableOpacity>
+            {this.state.show ? <TouchableOpacity style={styles.closeBox} onPress={this.closePicker.bind(this)}><Text style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
+              {this.state.show ? <ScrollView style={{backgroundColor: 'white', marginTop: 15}}>
+                        <View style={styles.imageGrid}>
                           { this.state.images.map((image, key) => {
                               return (
+
                                   <TouchableHighlight onPress={this.uploadPhoto.bind(this, image.node.image.uri)} key={key}>
                                   <Image key={key} style={styles.image} source={{ uri: image.node.image.uri }} />
+                                  </TouchableHighlight>
+
+                              );
+                              })
+                          }
+                          </View>
+                          </ScrollView> : null}
+
+            <TouchableOpacity style={styles.viewPhotos} onPress={this.viewImages.bind(this)}><Text>View Photos</Text></TouchableOpacity>
+            {this.state.showPhotos ? <TouchableOpacity style={styles.closeBox2} onPress={this.closeViewer.bind(this)}><Text style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
+              {this.state.showPhotos ? <ScrollView style={{backgroundColor: 'white', marginBottom: 15}}>
+                        <View style={styles.imageGrid}>
+                          { this.state.dlPhotos.map((image, key) => {
+                              return (
+                                  <TouchableHighlight  key={key}>
+                                  <Image key={key} style={styles.image} source={{ uri: image}} />
                                   </TouchableHighlight>
                               );
                               })
                           }
-                          </View> : null}
+                          </View>
+                          </ScrollView> : null}
 
-              <TouchableHighlight onPress={() => {
+            <TouchableOpacity onPress={this.viewComments.bind(this)} style={styles.comments}><Text>Comments</Text></TouchableOpacity>
+            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3} onPress={this.closeComments.bind(this)}><Text>X</Text></TouchableOpacity> : null}
+            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3Add} onPress={this.addComment.bind(this)}><Text>+</Text></TouchableOpacity> : null}
+              {this.state.showComments ? <ScrollView style={{backgroundColor: 'white', marginBottom: 15, width: 230}}>
+                    {this.state.comments.map((comment, key) =>{
+                      return (
+                        <View><Text>{comment.comment}</Text></View>
+                      );
+                    })
+                  }
+                  </ScrollView> : null}
+            {this.state.showComments ? <View style={styles.addComment}><TextInput onChangeText={(comment) => this.setState({comment})} value={this.state.comment}></TextInput></View> : null}
+
+
+              <TouchableOpacity onPress={() => {
                 this.setModalVisible(!this.state.modalVisible)
-                this.setState({images:[], show: false})
-              }}>
-                <View style={styles.hider}><Text>Hide Modal</Text></View>
-              </TouchableHighlight>
+                this.setState({images:[],
+                              show: false,
+                              dlPhotos:[],
+                              showPhotos: false,
+                              place: "",
+                              comments: []
+                            })
+                }}>
+                <View style={styles.hider}><Text>Close Menu</Text></View>
+              </TouchableOpacity>
 
             </View>
           </View>
         </View>
       </Modal>
 
-        <MapView
-            style={styles.map}
-            region={this.state.initialPosition}>
+      <MapView
+          style={styles.map}
+          region={this.state.initialPosition}>
 
-            <MapView.Marker coordinate={this.state.markerPosition}>
-              <View style={styles.radius}>
-                <View style={styles.marker}/>
-              </View>
-            </MapView.Marker>
+          <MapView.Marker coordinate={this.state.markerPosition}>
+            <View style={styles.radius}>
+              <View style={styles.marker}/>
+            </View>
+          </MapView.Marker>
 
             {this.state.markers.map((marker, key)=>{
               return  <MapView.Marker key={key} onPress={this.showMe.bind(this, marker)} coordinate={marker}/>
@@ -271,9 +418,10 @@ export default class Maps extends Component {
         </MapView>
 
           <View style={styles.footer}>
-            <TouchableHighlight style={styles.bringUp} onPress={this.upper.bind(this)}>
-              <Text>Show Modal</Text>
-            </TouchableHighlight>
+
+            <TouchableOpacity onPress={this.settings.bind(this)} style={styles.settingsButton}>
+                <Text>Settings</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity onPress={this.addMarker.bind(this, this.state.markerPosition)} style={styles.addButton}>
                 <Text style={styles.buttonText}>Add Marker</Text>
@@ -350,38 +498,48 @@ const styles = StyleSheet.create({
     },
       addButton: {
       backgroundColor: '#E91E63',
-      width: 80,
-      height: 80,
+      width: 100,
+      height: 60,
       borderRadius: 50,
       borderColor: '#ccc',
       alignItems: 'center',
       justifyContent: 'center',
       elevation: 8,
       marginBottom: 0,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
+      // left: 30
     },
     logoutButton: {
       backgroundColor: '#E91E63',
-      width: 90,
-      height: 45,
-      borderRadius: 210,
+      width: 60,
+      height: 60,
+      borderRadius: 50,
       borderColor: '#ccc',
       alignItems: 'center',
       justifyContent: 'center',
       elevation: 8,
-      left: 20,
       marginBottom: 0,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
+      // left: 80
     },
-    bringUp: {
+    settingsButton: {
       backgroundColor: '#E91E63',
-      width: 90,
-      height: 45,
-      borderRadius: 210,
+      width: 60,
+      height: 60,
+      borderRadius: 50,
       borderColor: '#ccc',
       alignItems: 'center',
       justifyContent: 'center',
       elevation: 8,
-      right: 20,
       marginBottom: 0,
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
+      // left: 80
     },
     buttonText: {
       color: 'white'
@@ -389,9 +547,11 @@ const styles = StyleSheet.create({
     menuBox: {
       borderColor: 'white',
       borderWidth: 3,
-      backgroundColor: 'red',
+      backgroundColor: '#E91E63',
       height: 500,
       width: 300,
+      alignItems: 'center',
+      justifyContent: 'center',
       padding: 20,
       borderRadius: 10,
       shadowColor: '#000',
@@ -403,7 +563,7 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
     image: {
         width: 100,
@@ -412,22 +572,113 @@ const styles = StyleSheet.create({
     },
     closePhotos: {
       color: 'white',
-      fontSize: 18
+      fontSize: 12
     },
     closeBox: {
       position: 'absolute',
-      borderRadius: 50,
-      left: 250,
-      top: 13,
+      borderRadius: 8,
+      left: 256,
+      top: 21.5,
       alignItems: 'center',
       justifyContent: 'center',
-      width: 27,
-      height: 27,
-      padding: 5,
+      width: 24,
+      height: 24,
+      padding: 4,
       backgroundColor: 'blue'
     },
+    closeBox2: {
+      position: 'absolute',
+      borderRadius: 8,
+      left: 256,
+      top: 63.5,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 24,
+      height: 24,
+      padding: 4,
+      backgroundColor: 'blue'
+    },
+    closeBox3: {
+      position: 'absolute',
+      borderRadius: 8,
+      left: 256,
+      top: 106,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 24,
+      height: 24,
+      padding: 4,
+      backgroundColor: 'blue'
+    },
+    closeBox3Add: {
+      position: 'absolute',
+      borderRadius: 8,
+      left: 225,
+      top: 106,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 24,
+      height: 24,
+      padding: 4,
+      backgroundColor: 'blue'
+    },
+    closeComments: {
+
+    },
     hider: {
-      left: 5
+      backgroundColor: 'white',
+      width: 270,
+      alignItems: 'center',
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
+      padding: 5
+    },
+    viewPhotos: {
+      backgroundColor: 'white',
+      width: 270,
+      alignItems: 'center',
+      marginTop: 15,
+      marginBottom: 15,
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
+      padding: 5
+    },
+    uploader: {
+      backgroundColor: 'white',
+      alignItems: 'center',
+      width: 270,
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
+      padding: 5
+    },
+    comments: {
+      backgroundColor: 'white',
+      alignItems: 'center',
+      width: 270,
+      borderRadius: 8,
+      shadowColor: '#000',
+      shadowOffset: { width: 4, height: 4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
+      padding: 5,
+      marginBottom: 15
+    },
+    addComment: {
+      position: 'absolute',
+      backgroundColor: 'blue',
+      top: 392,
+      height: 40,
+      width: 230,
+      padding: 10,
     }
 });
 
