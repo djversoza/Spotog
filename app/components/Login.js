@@ -9,6 +9,7 @@ import {
   TextInput,
   AsyncStorage,
   Menu,
+  KeyboardAvoidingView,
   Image
 } from 'react-native';
 
@@ -108,7 +109,7 @@ export default class Login extends Component {
 
   render() {
     return (
-      <View style = {styles.container}>
+      <KeyboardAvoidingView behavior="padding" style = {styles.container}>
 
         <Image source={require('./img/maps.jpg')} style={styles.backgroundImage}>
 
@@ -142,7 +143,7 @@ export default class Login extends Component {
 
           </View>
         </Image>
-      </View>
+      </KeyboardAvoidingView>
     );
   }
 };

@@ -269,6 +269,9 @@ export default class Maps extends Component {
      this.props.navigator.push({
        title: 'Settings',
        component: Settings,
+       passProps: {
+         'id': this.props.id
+       }
      });
    };
 
@@ -340,7 +343,7 @@ export default class Maps extends Component {
             <View style={styles.menuBox}>
             <TouchableOpacity style={styles.uploader} onPress={this.selectImage.bind(this)}><Text> Upload Photos </Text></TouchableOpacity>
             {this.state.show ? <TouchableOpacity style={styles.closeBox} onPress={this.closePicker.bind(this)}><Text style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
-              {this.state.show ? <ScrollView style={{backgroundColor: 'white', marginTop: 15}}>
+              {this.state.show ? <ScrollView style={{backgroundColor: 'white', marginTop: 15, borderRadius: 5}}>
                         <View style={styles.imageGrid}>
                           { this.state.images.map((image, key) => {
                               return (
@@ -357,7 +360,7 @@ export default class Maps extends Component {
 
             <TouchableOpacity style={styles.viewPhotos} onPress={this.viewImages.bind(this)}><Text>View Photos</Text></TouchableOpacity>
             {this.state.showPhotos ? <TouchableOpacity style={styles.closeBox2} onPress={this.closeViewer.bind(this)}><Text style={styles.closePhotos}>X</Text></TouchableOpacity> : null}
-              {this.state.showPhotos ? <ScrollView style={{backgroundColor: 'white', marginBottom: 15}}>
+              {this.state.showPhotos ? <ScrollView style={{backgroundColor: 'white', marginBottom: 15, borderRadius: 5}}>
                         <View style={styles.imageGrid}>
                           { this.state.dlPhotos.map((image, key) => {
                               return (
@@ -371,17 +374,17 @@ export default class Maps extends Component {
                           </ScrollView> : null}
 
             <TouchableOpacity onPress={this.viewComments.bind(this)} style={styles.comments}><Text>Comments</Text></TouchableOpacity>
-            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3} onPress={this.closeComments.bind(this)}><Text>X</Text></TouchableOpacity> : null}
-            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3Add} onPress={this.addComment.bind(this)}><Text>+</Text></TouchableOpacity> : null}
-              {this.state.showComments ? <ScrollView style={{backgroundColor: 'white', marginBottom: 15, width: 230}}>
+            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3} onPress={this.closeComments.bind(this)}><Text style={styles.ex}>X</Text></TouchableOpacity> : null}
+            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3Add} onPress={this.addComment.bind(this)}><Text style={styles.plus}>+</Text></TouchableOpacity> : null}
+              {this.state.showComments ? <ScrollView style={{backgroundColor: 'white', marginBottom: 15, width: 250, borderRadius: 5}}>
                     {this.state.comments.map((comment, key) =>{
                       return (
-                        <View><Text>{comment.comment}</Text></View>
+                        <View key={key} style={styles.commentBox}><Text>{comment.comment}</Text></View>
                       );
                     })
                   }
                   </ScrollView> : null}
-            {this.state.showComments ? <View style={styles.addComment}><TextInput onChangeText={(comment) => this.setState({comment})} value={this.state.comment}></TextInput></View> : null}
+            {this.state.showComments ? <View style={styles.addComment}><TextInput style={{height: 15}} placeholder="Enter Comment" onChangeText={(comment) => this.setState({comment})} value={this.state.comment}></TextInput></View> : null}
 
 
               <TouchableOpacity onPress={() => {
@@ -390,6 +393,7 @@ export default class Maps extends Component {
                               show: false,
                               dlPhotos:[],
                               showPhotos: false,
+                              showComments: false,
                               place: "",
                               comments: []
                             })
@@ -494,29 +498,34 @@ const styles = StyleSheet.create({
       padding: 15,
       paddingTop: 8,
       height: 100,
-      backgroundColor: '#252525',
+      borderWidth: 2,
+      borderColor: '#fff',
+      backgroundColor: '#41454c',
+      shadowOffset: { height: -4 },
+      shadowOpacity: 0.5,
+      shadowRadius: 2,
     },
       addButton: {
-      backgroundColor: '#E91E63',
+      backgroundColor: '#fff',
       width: 100,
       height: 60,
-      borderRadius: 50,
+      borderRadius: 5,
       borderColor: '#ccc',
       alignItems: 'center',
       justifyContent: 'center',
       elevation: 8,
       marginBottom: 0,
+      marginLeft: 25,
+      marginRight: 25,
       shadowOffset: { width: 4, height: 4 },
       shadowOpacity: 0.5,
       shadowRadius: 2,
-      // left: 30
     },
     logoutButton: {
-      backgroundColor: '#E91E63',
+      backgroundColor: 'white',
       width: 60,
       height: 60,
-      borderRadius: 50,
-      borderColor: '#ccc',
+      borderRadius: 5,
       alignItems: 'center',
       justifyContent: 'center',
       elevation: 8,
@@ -524,14 +533,12 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 4, height: 4 },
       shadowOpacity: 0.5,
       shadowRadius: 2,
-      // left: 80
     },
     settingsButton: {
-      backgroundColor: '#E91E63',
+      backgroundColor: 'white',
       width: 60,
       height: 60,
-      borderRadius: 50,
-      borderColor: '#ccc',
+      borderRadius: 5,
       alignItems: 'center',
       justifyContent: 'center',
       elevation: 8,
@@ -539,15 +546,14 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 4, height: 4 },
       shadowOpacity: 0.5,
       shadowRadius: 2,
-      // left: 80
     },
     buttonText: {
-      color: 'white'
+      color: 'black'
     },
     menuBox: {
       borderColor: 'white',
       borderWidth: 3,
-      backgroundColor: '#E91E63',
+      backgroundColor: '#41454c',
       height: 500,
       width: 300,
       alignItems: 'center',
@@ -577,53 +583,50 @@ const styles = StyleSheet.create({
     closeBox: {
       position: 'absolute',
       borderRadius: 8,
-      left: 256,
-      top: 21.5,
+      left: 250,
+      top: 29.5,
       alignItems: 'center',
       justifyContent: 'center',
-      width: 24,
-      height: 24,
+      width: 30,
+      height: 30,
       padding: 4,
-      backgroundColor: 'blue'
+      backgroundColor: 'red'
     },
     closeBox2: {
       position: 'absolute',
       borderRadius: 8,
-      left: 256,
-      top: 63.5,
+      left: 250,
+      top: 96,
       alignItems: 'center',
       justifyContent: 'center',
-      width: 24,
-      height: 24,
+      width: 30,
+      height: 30,
       padding: 4,
-      backgroundColor: 'blue'
+      backgroundColor: 'red'
     },
     closeBox3: {
       position: 'absolute',
       borderRadius: 8,
-      left: 256,
-      top: 106,
+      left: 250,
+      top: 163,
       alignItems: 'center',
       justifyContent: 'center',
-      width: 24,
-      height: 24,
+      width: 30,
+      height: 30,
       padding: 4,
-      backgroundColor: 'blue'
+      backgroundColor: 'red'
     },
     closeBox3Add: {
       position: 'absolute',
       borderRadius: 8,
-      left: 225,
-      top: 106,
+      left: 215,
+      top: 163,
       alignItems: 'center',
       justifyContent: 'center',
-      width: 24,
-      height: 24,
+      width: 30,
+      height: 30,
       padding: 4,
-      backgroundColor: 'blue'
-    },
-    closeComments: {
-
+      backgroundColor: 'green'
     },
     hider: {
       backgroundColor: 'white',
@@ -634,20 +637,20 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 4, height: 4 },
       shadowOpacity: 0.5,
       shadowRadius: 2,
-      padding: 5
+      padding: 10
     },
     viewPhotos: {
       backgroundColor: 'white',
       width: 270,
       alignItems: 'center',
-      marginTop: 15,
-      marginBottom: 15,
+      marginTop: 20,
+      marginBottom: 20,
       borderRadius: 8,
       shadowColor: '#000',
       shadowOffset: { width: 4, height: 4 },
       shadowOpacity: 0.5,
       shadowRadius: 2,
-      padding: 5
+      padding: 15
     },
     uploader: {
       backgroundColor: 'white',
@@ -658,7 +661,7 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 4, height: 4 },
       shadowOpacity: 0.5,
       shadowRadius: 2,
-      padding: 5
+      padding: 15
     },
     comments: {
       backgroundColor: 'white',
@@ -669,16 +672,29 @@ const styles = StyleSheet.create({
       shadowOffset: { width: 4, height: 4 },
       shadowOpacity: 0.5,
       shadowRadius: 2,
-      padding: 5,
-      marginBottom: 15
+      padding: 15,
+      marginBottom: 23
     },
     addComment: {
+      borderWidth: 2,
+      borderColor: 'grey',
       position: 'absolute',
-      backgroundColor: 'blue',
-      top: 392,
-      height: 40,
-      width: 230,
+      backgroundColor: 'white',
+      top: 395,
+      height: 35,
+      width: 250,
       padding: 10,
+    },
+    commentBox: {
+      padding: 4,
+      borderBottomWidth: 2,
+      borderColor: 'grey'
+    },
+    ex: {
+      color: 'white'
+    },
+    plus: {
+      color: 'white'
     }
 });
 
