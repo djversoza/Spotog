@@ -101,13 +101,13 @@ export default class Settings extends Component {
 const styles = StyleSheet.create({
   settings: {
     alignItems: 'center',
-    borderColor: 'red',
+    borderColor: '#41454c',
     borderBottomWidth: 3,
     padding: 8
   },
   settingsTop: {
     alignItems: 'center',
-    borderColor: 'red',
+    borderColor: '#41454c',
     borderTopWidth: 3,
     borderBottomWidth: 3,
     padding: 8

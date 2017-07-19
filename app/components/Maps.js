@@ -374,8 +374,8 @@ export default class Maps extends Component {
                           </ScrollView> : null}
 
             <TouchableOpacity onPress={this.viewComments.bind(this)} style={styles.comments}><Text>Comments</Text></TouchableOpacity>
-            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3} onPress={this.closeComments.bind(this)}><Text>X</Text></TouchableOpacity> : null}
-            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3Add} onPress={this.addComment.bind(this)}><Text>+</Text></TouchableOpacity> : null}
+            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3} onPress={this.closeComments.bind(this)}><Text style={styles.ex}>X</Text></TouchableOpacity> : null}
+            {this.state.showComments ? <TouchableOpacity style={styles.closeBox3Add} onPress={this.addComment.bind(this)}><Text style={styles.plus}>+</Text></TouchableOpacity> : null}
               {this.state.showComments ? <ScrollView style={{backgroundColor: 'white', marginBottom: 15, width: 250, borderRadius: 5}}>
                     {this.state.comments.map((comment, key) =>{
                       return (
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
       height: 100,
       borderWidth: 2,
       borderColor: '#fff',
-      backgroundColor: 'grey',
+      backgroundColor: '#41454c',
       shadowOffset: { height: -4 },
       shadowOpacity: 0.5,
       shadowRadius: 2,
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     menuBox: {
       borderColor: 'white',
       borderWidth: 3,
-      backgroundColor: '#E91E63',
+      backgroundColor: '#41454c',
       height: 500,
       width: 300,
       alignItems: 'center',
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
       width: 30,
       height: 30,
       padding: 4,
-      backgroundColor: 'blue'
+      backgroundColor: 'red'
     },
     closeBox2: {
       position: 'absolute',
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
       width: 30,
       height: 30,
       padding: 4,
-      backgroundColor: 'blue'
+      backgroundColor: 'red'
     },
     closeBox3: {
       position: 'absolute',
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
       width: 30,
       height: 30,
       padding: 4,
-      backgroundColor: 'blue'
+      backgroundColor: 'red'
     },
     closeBox3Add: {
       position: 'absolute',
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
       width: 30,
       height: 30,
       padding: 4,
-      backgroundColor: 'blue'
+      backgroundColor: 'green'
     },
     hider: {
       backgroundColor: 'white',
@@ -689,6 +689,12 @@ const styles = StyleSheet.create({
       padding: 4,
       borderBottomWidth: 2,
       borderColor: 'grey'
+    },
+    ex: {
+      color: 'white'
+    },
+    plus: {
+      color: 'white'
     }
 });
 
