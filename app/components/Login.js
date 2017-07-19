@@ -121,7 +121,6 @@ export default class Login extends Component {
               <TextInput style={styles.input}
                 onChangeText={(username) => this.setState({username})}
                 value={this.state.username}
-
                 placeholder='username'>
               </TextInput>
 
